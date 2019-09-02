@@ -1,0 +1,12 @@
+Source: sound-usb-dkms
+Priority: optional
+Maintainer: Hin-Tak Leung <htl10@users.sourceforge.net>
+Build-Depends: debhelper (>= 11), dkms
+Standards-Version: 4.1.3
+Section: kernel
+Homepage: https://github.com/HinTak/sound-usb-dkms
+
+Package: sound-usb-dkms
+Architecture: all
+Depends: ${misc:Depends}, dkms
+Description: DKMS source for sound usb

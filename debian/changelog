@@ -1,0 +1,6 @@
+sound-usb-dkms (5.3.0rc7.14312-1ubuntu1) disco; urgency=medium
+
+  * sync to v5.3-rc1-1551-g07f4f220e3e8 / sound-5.3-rc7-14312-g07f4f220e3e8
+
+ -- Hin-Tak Leung <htl10@users.sourceforge.net>  Tue, 06 Aug 2019 15:17:51 +0100
+
