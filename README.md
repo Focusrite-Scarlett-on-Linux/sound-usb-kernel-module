@@ -43,7 +43,7 @@ dnf install -y dkms
 dnf install -y sound-usb-5.3.0rc7.14312-1dkms.noarch.rpm
 ```
 
-### Manual installation on Non-Ubuntu/Debian Systems
+### Manual Installation on Non-Ubuntu/Debian Systems
 
 For Non-Ubuntu/Debian Systems,
 
@@ -65,7 +65,7 @@ dkms install --verbose sound-usb/5.3.0rc7.14312
 
 The above build and install against your running kernel. Using `modprobe -r ...` to unload the old modules, and `modprobe -v ...` to reload. Reboot is probably simpler.
 
-#### Manual Fedora Installation example
+#### Manual Fedora Installation Example
 
 As an example, the `noarch.rpm` was built in a Fedora 30 docker instance (`docker pull fedora:30`) with:
 
@@ -83,3 +83,26 @@ dkms status
 dkms build --verbose sound-usb/5.3.0rc7.14312 -k 5.2.9-200.fc30.x86_64
 dkms mkrpm --verbose --source-only sound-usb/5.3.0rc7.14312 -k 5.2.9-200.fc30.x86_64
 ```
+
+## Development
+
+To actually try modifying the driver source code, and build your modification against your current running kernel, do this (don't worry - the outcome stays
+in this directory):
+
+```
+make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb clean
+make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb
+```
+
+*Untested* Something like this would install the newly built modules in your system against your current kernel.
+You might want to do `make -n` to see where the command put the modules:
+
+```
+make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb modules_install
+```
+
+However, you are advised to do `dpkg-buildpackage` (on Ubuntu/Debian), or follow the "Manual installation..." sections above, to build the DKMS deb/rpm
+package. After install that instead, the DKMS system will then build and install the kernel modules at the next reboot, for any old or new compatible kernel you
+installed or will install in the near future. The DKMS system puts the newly built modules in a separate directory (to be loaded with a higher priority)
+from your distribution as-shipped modules. The separate module directory can be removed and changes reverted.
+This is a much safer way of trying out new driver code, than overwriting your as-shipped modules.
