@@ -6,7 +6,7 @@ include /usr/share/dpkg/pkg-info.mk
 	dh $@ --with dkms
 
 override_dh_install:
-	dh_install sound-usb/* usr/src/sound-usb-$(DEB_VERSION_UPSTREAM)/
+	dh_install sound/usb/* usr/src/sound-usb-$(DEB_VERSION_UPSTREAM)/
 
 override_dh_dkms:
 	dh_dkms -V $(DEB_VERSION_UPSTREAM)
