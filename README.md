@@ -6,7 +6,8 @@ a few months in the future.
 
 This is assembled from the Linux Kernel's sound sub-system maintainer, 
 Takashi Iwai's tree (`git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git`). Initially, it was mainly for trying out the 
-work of Geoffrey D. Bennett (`git://github.com/geoffreybennett/scarlett-gen2.git`) regarding the Focusrite Scarlett 18i20 Gen 2.
+work of Geoffrey D. Bennett (`git://github.com/geoffreybennett/scarlett-gen2.git`) [final V7 post](https://mailman.alsa-project.org/pipermail/alsa-devel/2019-July/153057.html)
+regarding the Focusrite Scarlett 18i20 Gen 2.
 However, it is likely useful for other USB sound devices too.
 
 ## Installation
