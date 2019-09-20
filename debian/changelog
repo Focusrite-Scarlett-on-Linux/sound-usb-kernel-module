@@ -1,6 +1,10 @@
-sound-usb-dkms (5.3.0rc8.14320-1ubuntu2) UNRELEASED; urgency=medium
+sound-usb-dkms (5.4.0rc1.1400-1ubuntu2) UNRELEASED; urgency=medium
 
+  [ Hin-Tak Leung ]
   * sync and up to v5.3-rc1-1564-g260a22ba6af4 / sound-5.3-rc8-14320-g260a22ba6af4
+
+  [ Hin-Tak Leung ]
+  * sync to v5.3-rc8-1940-g8dac6c98962f / sound-5.4-rc1-1400-g8dac6c98962f
 
  -- Hin-Tak Leung <htl10@users.sourceforge.net>  Fri, 06 Sep 2019 14:11:04 +0100
 
