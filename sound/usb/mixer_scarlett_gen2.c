@@ -811,7 +811,8 @@ enum {
 	SCARLETT2_CONFIG_SPEAKER_SWITCH = 9,
 	SCARLETT2_CONFIG_GAIN_HALO_1 = 10,
 	SCARLETT2_CONFIG_GAIN_HALO_2 = 11,
-	SCARLETT2_CONFIG_COUNT = 12
+	SCARLETT2_CONFIG_TALKBACK = 12,
+	SCARLETT2_CONFIG_COUNT = 13
 };
 
 /* Location, size, and activation command number for the configuration
@@ -907,6 +908,13 @@ static const struct scarlett2_config
 		.offset = 0xa8,
 		.size = 1,
 		.activate = 11
+	},
+
+	/* Talkback */
+	{
+		.offset = 0xb0,
+		.size = 1,
+		.activate = 10
 	}
 };
 
