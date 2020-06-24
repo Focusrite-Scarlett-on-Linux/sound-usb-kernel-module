@@ -1674,6 +1674,14 @@ void snd_usb_ctl_msg_quirk(struct usb_device *dev, unsigned int pipe,
 	     chip->usb_id == USB_ID(0x0951, 0x16ad)) &&
 	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
 		usleep_range(1000, 2000);
+
+	/*
+	 * Samsung USBC Headset (AKG) need a tiny delay after each
+	 * class compliant request. (Model number: AAM625R or AAM627R)
+	 */
+	if (chip->usb_id == USB_ID(0x04e8, 0xa051) &&
+	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
+		usleep_range(5000, 6000);
 }
 
 /*
@@ -1857,6 +1865,7 @@ struct registration_quirk {
 static const struct registration_quirk registration_quirks[] = {
 	REG_QUIRK_ENTRY(0x0951, 0x16d8, 2),	/* Kingston HyperX AMP */
 	REG_QUIRK_ENTRY(0x0951, 0x16ed, 2),	/* Kingston HyperX Cloud Alpha S */
+	REG_QUIRK_ENTRY(0x0951, 0x16ea, 2),	/* Kingston HyperX Cloud Flight S */
 	{ 0 }					/* terminator */
 };
 
