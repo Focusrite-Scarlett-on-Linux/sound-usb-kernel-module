@@ -57,6 +57,7 @@ static const struct snd_usb_implicit_fb_match playback_implicit_fb_quirks[] = {
 	IMPLICIT_FB_FIXED_DEV(0x31e9, 0x0002, 0x81, 2), /* Solid State Logic SSL2+ */
 	IMPLICIT_FB_FIXED_DEV(0x0499, 0x172f, 0x81, 2), /* Steinberg UR22C */
 	IMPLICIT_FB_FIXED_DEV(0x0d9a, 0x00df, 0x81, 2), /* RTX6001 */
+	IMPLICIT_FB_FIXED_DEV(0x1235, 0x8210, 0x81, 2), /* Focusrite Scarlett 2i2 3rd Gen */
 	IMPLICIT_FB_FIXED_DEV(0x1235, 0x8212, 0x81, 2), /* Focusrite Scarlett 4i4 3rd Gen */
 	IMPLICIT_FB_FIXED_DEV(0x1235, 0x8213, 0x81, 2), /* Focusrite Scarlett 8i6 3rd Gen */
 	IMPLICIT_FB_FIXED_DEV(0x1235, 0x8214, 0x81, 2), /* Focusrite Scarlett 18i8 3rd Gen */
