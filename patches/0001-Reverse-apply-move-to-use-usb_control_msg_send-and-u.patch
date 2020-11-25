@@ -1,0 +1,436 @@
+From b0382073d43a744010e17f3a5e2a1582509e548f Mon Sep 17 00:00:00 2001
+From: Hin-Tak Leung <htl10@users.sourceforge.net>
+Date: Wed, 25 Nov 2020 02:59:55 +0000
+Subject: [PATCH 1/2] Reverse-apply "move to use usb_control_msg_send() and
+ usb_control_msg_recv()"
+
+Leading up to v5.10:
+
+$ git diff 3b7672c3eb16e92f3efb4def59ee206593bfb721..10fbd979bd636629e3d08dda70f837c3b4864b47 sound/usb/
+
+$ git log --format=oneline v5.10-rc1-1899-g6379f7e8d365 -- sound/usb/
+...
+10fbd979bd636629e3d08dda70f837c3b4864b47 sound: hiface: move to use usb_control_msg_send()
+6d2d427e3b1266c3eab80cdb961c21b9f4fcdadf sound: line6: move to use usb_control_msg_send() and usb_control_msg_recv()
+9ad71af922a8b4a619665498e0094dc5206e9f50 sound: 6fire: move to use usb_control_msg_send() and usb_control_msg_recv()
+f246023816e6cd1ddcb3e426eddcd0faf31bd67e sound: usx2y: move to use usb_control_msg_send()
+3b7672c3eb16e92f3efb4def59ee206593bfb721 Revert "sound: usx2y: move to use usb_control_msg_send()"
+...
+
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ sound/usb/6fire/firmware.c | 38 +++++++++++++-------
+ sound/usb/hiface/pcm.c     | 14 ++++----
+ sound/usb/line6/driver.c   | 72 ++++++++++++++++++++++----------------
+ sound/usb/line6/podhd.c    | 23 +++++++-----
+ sound/usb/line6/toneport.c |  9 +++--
+ sound/usb/usx2y/us122l.c   | 42 +++++++++++++++++-----
+ 6 files changed, 127 insertions(+), 71 deletions(-)
+
+diff --git a/sound/usb/6fire/firmware.c b/sound/usb/6fire/firmware.c
+index 8981e61..69137c1 100644
+--- a/sound/usb/6fire/firmware.c
++++ b/sound/usb/6fire/firmware.c
+@@ -158,17 +158,29 @@ static int usb6fire_fw_ihex_init(const struct firmware *fw,
+ static int usb6fire_fw_ezusb_write(struct usb_device *device,
+ 		int type, int value, char *data, int len)
+ {
+-	return usb_control_msg_send(device, 0, type,
+-				    USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-				    value, 0, data, len, HZ, GFP_KERNEL);
++	int ret;
++
++	ret = usb_control_msg(device, usb_sndctrlpipe(device, 0), type,
++			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
++			value, 0, data, len, HZ);
++	if (ret < 0)
++		return ret;
++	else if (ret != len)
++		return -EIO;
++	return 0;
+ }
+ 
+ static int usb6fire_fw_ezusb_read(struct usb_device *device,
+ 		int type, int value, char *data, int len)
+ {
+-	return usb_control_msg_recv(device, 0, type,
+-				    USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-				    value, 0, data, len, HZ, GFP_KERNEL);
++	int ret = usb_control_msg(device, usb_rcvctrlpipe(device, 0), type,
++			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE, value,
++			0, data, len, HZ);
++	if (ret < 0)
++		return ret;
++	else if (ret != len)
++		return -EIO;
++	return 0;
+ }
+ 
+ static int usb6fire_fw_fpga_write(struct usb_device *device,
+@@ -218,7 +230,7 @@ static int usb6fire_fw_ezusb_upload(
+ 	/* upload firmware image */
+ 	data = 0x01; /* stop ezusb cpu */
+ 	ret = usb6fire_fw_ezusb_write(device, 0xa0, 0xe600, &data, 1);
+-	if (ret) {
++	if (ret < 0) {
+ 		kfree(rec);
+ 		release_firmware(fw);
+ 		dev_err(&intf->dev,
+@@ -230,7 +242,7 @@ static int usb6fire_fw_ezusb_upload(
+ 	while (usb6fire_fw_ihex_next_record(rec)) { /* write firmware */
+ 		ret = usb6fire_fw_ezusb_write(device, 0xa0, rec->address,
+ 				rec->data, rec->len);
+-		if (ret) {
++		if (ret < 0) {
+ 			kfree(rec);
+ 			release_firmware(fw);
+ 			dev_err(&intf->dev,
+@@ -245,7 +257,7 @@ static int usb6fire_fw_ezusb_upload(
+ 	if (postdata) { /* write data after firmware has been uploaded */
+ 		ret = usb6fire_fw_ezusb_write(device, 0xa0, postaddr,
+ 				postdata, postlen);
+-		if (ret) {
++		if (ret < 0) {
+ 			dev_err(&intf->dev,
+ 				"unable to upload ezusb firmware %s: post urb.\n",
+ 				fwname);
+@@ -255,7 +267,7 @@ static int usb6fire_fw_ezusb_upload(
+ 
+ 	data = 0x00; /* resume ezusb cpu */
+ 	ret = usb6fire_fw_ezusb_write(device, 0xa0, 0xe600, &data, 1);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&intf->dev,
+ 			"unable to upload ezusb firmware %s: end message.\n",
+ 			fwname);
+@@ -290,7 +302,7 @@ static int usb6fire_fw_fpga_upload(
+ 	end = fw->data + fw->size;
+ 
+ 	ret = usb6fire_fw_ezusb_write(device, 8, 0, NULL, 0);
+-	if (ret) {
++	if (ret < 0) {
+ 		kfree(buffer);
+ 		release_firmware(fw);
+ 		dev_err(&intf->dev,
+@@ -315,7 +327,7 @@ static int usb6fire_fw_fpga_upload(
+ 	kfree(buffer);
+ 
+ 	ret = usb6fire_fw_ezusb_write(device, 9, 0, NULL, 0);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&intf->dev,
+ 			"unable to upload fpga firmware: end urb.\n");
+ 		return ret;
+@@ -351,7 +363,7 @@ int usb6fire_fw_init(struct usb_interface *intf)
+ 	u8 buffer[12];
+ 
+ 	ret = usb6fire_fw_ezusb_read(device, 1, 0, buffer, 8);
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&intf->dev,
+ 			"unable to receive device firmware state.\n");
+ 		return ret;
+diff --git a/sound/usb/hiface/pcm.c b/sound/usb/hiface/pcm.c
+index d942179..a148caa 100644
+--- a/sound/usb/hiface/pcm.c
++++ b/sound/usb/hiface/pcm.c
+@@ -156,14 +156,16 @@ static int hiface_pcm_set_rate(struct pcm_runtime *rt, unsigned int rate)
+ 	 * This control message doesn't have any ack from the
+ 	 * other side
+ 	 */
+-	ret = usb_control_msg_send(device, 0,
+-				   HIFACE_SET_RATE_REQUEST,
+-				   USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+-				   rate_value, 0, NULL, 0, 100, GFP_KERNEL);
+-	if (ret)
++	ret = usb_control_msg(device, usb_sndctrlpipe(device, 0),
++			      HIFACE_SET_RATE_REQUEST,
++			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
++			      rate_value, 0, NULL, 0, 100);
++	if (ret < 0) {
+ 		dev_err(&device->dev, "Error setting samplerate %d.\n", rate);
++		return ret;
++	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static struct pcm_substream *hiface_pcm_get_substream(struct snd_pcm_substream
+diff --git a/sound/usb/line6/driver.c b/sound/usb/line6/driver.c
+index a030dd6..60674ce 100644
+--- a/sound/usb/line6/driver.c
++++ b/sound/usb/line6/driver.c
+@@ -337,18 +337,23 @@ int line6_read_data(struct usb_line6 *line6, unsigned address, void *data,
+ {
+ 	struct usb_device *usbdev = line6->usbdev;
+ 	int ret;
+-	u8 len;
++	unsigned char *len;
+ 	unsigned count;
+ 
+ 	if (address > 0xffff || datalen > 0xff)
+ 		return -EINVAL;
+ 
++	len = kmalloc(1, GFP_KERNEL);
++	if (!len)
++		return -ENOMEM;
++
+ 	/* query the serial number: */
+-	ret = usb_control_msg_send(usbdev, 0, 0x67,
+-				   USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+-				   (datalen << 8) | 0x21, address, NULL, 0,
+-				   LINE6_TIMEOUT * HZ, GFP_KERNEL);
+-	if (ret) {
++	ret = usb_control_msg(usbdev, usb_sndctrlpipe(usbdev, 0), 0x67,
++			      USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
++			      (datalen << 8) | 0x21, address,
++			      NULL, 0, LINE6_TIMEOUT * HZ);
++
++	if (ret < 0) {
+ 		dev_err(line6->ifcdev, "read request failed (error %d)\n", ret);
+ 		goto exit;
+ 	}
+@@ -357,42 +362,45 @@ int line6_read_data(struct usb_line6 *line6, unsigned address, void *data,
+ 	for (count = 0; count < LINE6_READ_WRITE_MAX_RETRIES; count++) {
+ 		mdelay(LINE6_READ_WRITE_STATUS_DELAY);
+ 
+-		ret = usb_control_msg_recv(usbdev, 0, 0x67,
+-					   USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+-					   0x0012, 0x0000, &len, 1,
+-					   LINE6_TIMEOUT * HZ, GFP_KERNEL);
+-		if (ret) {
++		ret = usb_control_msg(usbdev, usb_rcvctrlpipe(usbdev, 0), 0x67,
++				      USB_TYPE_VENDOR | USB_RECIP_DEVICE |
++				      USB_DIR_IN,
++				      0x0012, 0x0000, len, 1,
++				      LINE6_TIMEOUT * HZ);
++		if (ret < 0) {
+ 			dev_err(line6->ifcdev,
+ 				"receive length failed (error %d)\n", ret);
+ 			goto exit;
+ 		}
+ 
+-		if (len != 0xff)
++		if (*len != 0xff)
+ 			break;
+ 	}
+ 
+ 	ret = -EIO;
+-	if (len == 0xff) {
++	if (*len == 0xff) {
+ 		dev_err(line6->ifcdev, "read failed after %d retries\n",
+ 			count);
+ 		goto exit;
+-	} else if (len != datalen) {
++	} else if (*len != datalen) {
+ 		/* should be equal or something went wrong */
+ 		dev_err(line6->ifcdev,
+ 			"length mismatch (expected %d, got %d)\n",
+-			(int)datalen, len);
++			(int)datalen, (int)*len);
+ 		goto exit;
+ 	}
+ 
+ 	/* receive the result: */
+-	ret = usb_control_msg_recv(usbdev, 0, 0x67,
+-				   USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+-				   0x0013, 0x0000, data, datalen, LINE6_TIMEOUT * HZ,
+-				   GFP_KERNEL);
+-	if (ret)
++	ret = usb_control_msg(usbdev, usb_rcvctrlpipe(usbdev, 0), 0x67,
++			      USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
++			      0x0013, 0x0000, data, datalen,
++			      LINE6_TIMEOUT * HZ);
++
++	if (ret < 0)
+ 		dev_err(line6->ifcdev, "read failed (error %d)\n", ret);
+ 
+ exit:
++	kfree(len);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(line6_read_data);
+@@ -415,11 +423,12 @@ int line6_write_data(struct usb_line6 *line6, unsigned address, void *data,
+ 	if (!status)
+ 		return -ENOMEM;
+ 
+-	ret = usb_control_msg_send(usbdev, 0, 0x67,
+-				   USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+-				   0x0022, address, data, datalen, LINE6_TIMEOUT * HZ,
+-				   GFP_KERNEL);
+-	if (ret) {
++	ret = usb_control_msg(usbdev, usb_sndctrlpipe(usbdev, 0), 0x67,
++			      USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
++			      0x0022, address, data, datalen,
++			      LINE6_TIMEOUT * HZ);
++
++	if (ret < 0) {
+ 		dev_err(line6->ifcdev,
+ 			"write request failed (error %d)\n", ret);
+ 		goto exit;
+@@ -428,11 +437,14 @@ int line6_write_data(struct usb_line6 *line6, unsigned address, void *data,
+ 	for (count = 0; count < LINE6_READ_WRITE_MAX_RETRIES; count++) {
+ 		mdelay(LINE6_READ_WRITE_STATUS_DELAY);
+ 
+-		ret = usb_control_msg_recv(usbdev, 0, 0x67,
+-					   USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+-					   0x0012, 0x0000, status, 1, LINE6_TIMEOUT * HZ,
+-					   GFP_KERNEL);
+-		if (ret) {
++		ret = usb_control_msg(usbdev, usb_rcvctrlpipe(usbdev, 0),
++				      0x67,
++				      USB_TYPE_VENDOR | USB_RECIP_DEVICE |
++				      USB_DIR_IN,
++				      0x0012, 0x0000,
++				      status, 1, LINE6_TIMEOUT * HZ);
++
++		if (ret < 0) {
+ 			dev_err(line6->ifcdev,
+ 				"receiving status failed (error %d)\n", ret);
+ 			goto exit;
+diff --git a/sound/usb/line6/podhd.c b/sound/usb/line6/podhd.c
+index 28794a3..eef45f7 100644
+--- a/sound/usb/line6/podhd.c
++++ b/sound/usb/line6/podhd.c
+@@ -183,25 +183,29 @@ static const struct attribute_group podhd_dev_attr_group = {
+ static int podhd_dev_start(struct usb_line6_podhd *pod)
+ {
+ 	int ret;
+-	u8 init_bytes[8];
++	u8 *init_bytes;
+ 	int i;
+ 	struct usb_device *usbdev = pod->line6.usbdev;
+ 
+-	ret = usb_control_msg_send(usbdev, 0,
++	init_bytes = kmalloc(8, GFP_KERNEL);
++	if (!init_bytes)
++		return -ENOMEM;
++
++	ret = usb_control_msg(usbdev, usb_sndctrlpipe(usbdev, 0),
+ 					0x67, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+ 					0x11, 0,
+-					NULL, 0, LINE6_TIMEOUT * HZ, GFP_KERNEL);
+-	if (ret) {
++					NULL, 0, LINE6_TIMEOUT * HZ);
++	if (ret < 0) {
+ 		dev_err(pod->line6.ifcdev, "read request failed (error %d)\n", ret);
+ 		goto exit;
+ 	}
+ 
+ 	/* NOTE: looks like some kind of ping message */
+-	ret = usb_control_msg_recv(usbdev, 0, 0x67,
++	ret = usb_control_msg(usbdev, usb_rcvctrlpipe(usbdev, 0), 0x67,
+ 					USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+ 					0x11, 0x0,
+-					init_bytes, 3, LINE6_TIMEOUT * HZ, GFP_KERNEL);
+-	if (ret) {
++					init_bytes, 3, LINE6_TIMEOUT * HZ);
++	if (ret < 0) {
+ 		dev_err(pod->line6.ifcdev,
+ 			"receive length failed (error %d)\n", ret);
+ 		goto exit;
+@@ -216,12 +220,13 @@ static int podhd_dev_start(struct usb_line6_podhd *pod)
+ 			goto exit;
+ 	}
+ 
+-	ret = usb_control_msg_send(usbdev, 0,
++	ret = usb_control_msg(usbdev, usb_sndctrlpipe(usbdev, 0),
+ 					USB_REQ_SET_FEATURE,
+ 					USB_TYPE_STANDARD | USB_RECIP_DEVICE | USB_DIR_OUT,
+ 					1, 0,
+-					NULL, 0, LINE6_TIMEOUT * HZ, GFP_KERNEL);
++					NULL, 0, LINE6_TIMEOUT * HZ);
+ exit:
++	kfree(init_bytes);
+ 	return ret;
+ }
+ 
+diff --git a/sound/usb/line6/toneport.c b/sound/usb/line6/toneport.c
+index 4e5693c..94dd5e7 100644
+--- a/sound/usb/line6/toneport.c
++++ b/sound/usb/line6/toneport.c
+@@ -126,12 +126,11 @@ static int toneport_send_cmd(struct usb_device *usbdev, int cmd1, int cmd2)
+ {
+ 	int ret;
+ 
+-	ret = usb_control_msg_send(usbdev, 0, 0x67,
+-				   USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+-				   cmd1, cmd2, NULL, 0, LINE6_TIMEOUT * HZ,
+-				   GFP_KERNEL);
++	ret = usb_control_msg(usbdev, usb_sndctrlpipe(usbdev, 0), 0x67,
++			      USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
++			      cmd1, cmd2, NULL, 0, LINE6_TIMEOUT * HZ);
+ 
+-	if (ret) {
++	if (ret < 0) {
+ 		dev_err(&usbdev->dev, "send failed (error %d)\n", ret);
+ 		return ret;
+ 	}
+diff --git a/sound/usb/usx2y/us122l.c b/sound/usb/usx2y/us122l.c
+index 6e1bfe8..f86f7a6 100644
+--- a/sound/usb/usx2y/us122l.c
++++ b/sound/usb/usx2y/us122l.c
+@@ -82,13 +82,40 @@ static int us144_create_usbmidi(struct snd_card *card)
+ 				  &US122L(card)->midi_list, &quirk);
+ }
+ 
++/*
++ * Wrapper for usb_control_msg().
++ * Allocates a temp buffer to prevent dmaing from/to the stack.
++ */
++static int us122l_ctl_msg(struct usb_device *dev, unsigned int pipe,
++			  __u8 request, __u8 requesttype,
++			  __u16 value, __u16 index, void *data,
++			  __u16 size, int timeout)
++{
++	int err;
++	void *buf = NULL;
++
++	if (size > 0) {
++		buf = kmemdup(data, size, GFP_KERNEL);
++		if (!buf)
++			return -ENOMEM;
++	}
++	err = usb_control_msg(dev, pipe, request, requesttype,
++			      value, index, buf, size, timeout);
++	if (size > 0) {
++		memcpy(data, buf, size);
++		kfree(buf);
++	}
++	return err;
++}
++
+ static void pt_info_set(struct usb_device *dev, u8 v)
+ {
+ 	int ret;
+ 
+-	ret = usb_control_msg_send(dev, 0, 'I',
+-				   USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-				   v, 0, NULL, 0, 1000, GFP_NOIO);
++	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
++			      'I',
++			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
++			      v, 0, NULL, 0, 1000);
+ 	snd_printdd(KERN_DEBUG "%i\n", ret);
+ }
+ 
+@@ -278,11 +305,10 @@ static int us122l_set_sample_rate(struct usb_device *dev, int rate)
+ 	data[0] = rate;
+ 	data[1] = rate >> 8;
+ 	data[2] = rate >> 16;
+-	err = usb_control_msg_send(dev, 0, UAC_SET_CUR,
+-				   USB_TYPE_CLASS | USB_RECIP_ENDPOINT | USB_DIR_OUT,
+-				   UAC_EP_CS_ATTR_SAMPLE_RATE << 8, ep, data, 3,
+-				   1000, GFP_NOIO);
+-	if (err)
++	err = us122l_ctl_msg(dev, usb_sndctrlpipe(dev, 0), UAC_SET_CUR,
++			     USB_TYPE_CLASS|USB_RECIP_ENDPOINT|USB_DIR_OUT,
++			     UAC_EP_CS_ATTR_SAMPLE_RATE << 8, ep, data, 3, 1000);
++	if (err < 0)
+ 		snd_printk(KERN_ERR "%d: cannot set freq %d to ep 0x%x\n",
+ 			   dev->devnum, rate, ep);
+ 	return err;
+-- 
+2.28.0
+

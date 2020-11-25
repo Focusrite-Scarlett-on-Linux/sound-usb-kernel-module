@@ -1,0 +1,117 @@
+From d45b58494d66544295c6a834c28934410c10e4d5 Mon Sep 17 00:00:00 2001
+From: Hin-Tak Leung <htl10@users.sourceforge.net>
+Date: Wed, 25 Nov 2020 03:16:09 +0000
+Subject: [PATCH 2/2] Reverse-apply "move snd_usb_pipe_sanity_check into the
+ USB core"
+
+Leading up to v5.10:
+
+$ git diff fcc2cc1f35613c016e1de25bb001bfdd9eaa25f9^..fcc2cc1f35613c016e1de25bb001bfdd9eaa25f9 sound/usb/
+
+$ git log --format=oneline v5.10-rc1-1899-g6379f7e8d365 --grep=usb_pipe_type_check -- sound/usb/
+...
+4f6d57e4306868e4cb5fdf32f2e10f33dad1614f ALSA: remove calls to usb_pipe_type_check for control endpoints
+fcc2cc1f35613c016e1de25bb001bfdd9eaa25f9 USB: move snd_usb_pipe_sanity_check into the USB core
+...
+
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ sound/usb/helper.c              | 16 +++++++++++++++-
+ sound/usb/helper.h              |  1 +
+ sound/usb/mixer_scarlett_gen2.c |  2 +-
+ sound/usb/quirks.c              |  6 +++---
+ 4 files changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/sound/usb/helper.c b/sound/usb/helper.c
+index cf92d71..4c12cc5 100644
+--- a/sound/usb/helper.c
++++ b/sound/usb/helper.c
+@@ -63,6 +63,20 @@ void *snd_usb_find_csint_desc(void *buffer, int buflen, void *after, u8 dsubtype
+ 	return NULL;
+ }
+ 
++/* check the validity of pipe and EP types */
++int snd_usb_pipe_sanity_check(struct usb_device *dev, unsigned int pipe)
++{
++	static const int pipetypes[4] = {
++		PIPE_CONTROL, PIPE_ISOCHRONOUS, PIPE_BULK, PIPE_INTERRUPT
++	};
++	struct usb_host_endpoint *ep;
++
++	ep = usb_pipe_endpoint(dev, pipe);
++	if (!ep || usb_pipetype(pipe) != pipetypes[usb_endpoint_type(&ep->desc)])
++		return -EINVAL;
++	return 0;
++}
++
+ /*
+  * Wrapper for usb_control_msg().
+  * Allocates a temp buffer to prevent dmaing from/to the stack.
+@@ -75,7 +89,7 @@ int snd_usb_ctl_msg(struct usb_device *dev, unsigned int pipe, __u8 request,
+ 	void *buf = NULL;
+ 	int timeout;
+ 
+-	if (usb_pipe_type_check(dev, pipe))
++	if (snd_usb_pipe_sanity_check(dev, pipe))
+ 		return -EINVAL;
+ 
+ 	if (size > 0) {
+diff --git a/sound/usb/helper.h b/sound/usb/helper.h
+index f5b4c66..5e8a18b 100644
+--- a/sound/usb/helper.h
++++ b/sound/usb/helper.h
+@@ -7,6 +7,7 @@ unsigned int snd_usb_combine_bytes(unsigned char *bytes, int size);
+ void *snd_usb_find_desc(void *descstart, int desclen, void *after, u8 dtype);
+ void *snd_usb_find_csint_desc(void *descstart, int desclen, void *after, u8 dsubtype);
+ 
++int snd_usb_pipe_sanity_check(struct usb_device *dev, unsigned int pipe);
+ int snd_usb_ctl_msg(struct usb_device *dev, unsigned int pipe,
+ 		    __u8 request, __u8 requesttype, __u16 value, __u16 index,
+ 		    void *data, __u16 size);
+diff --git a/sound/usb/mixer_scarlett_gen2.c b/sound/usb/mixer_scarlett_gen2.c
+index 4bbec56..d33df14 100644
+--- a/sound/usb/mixer_scarlett_gen2.c
++++ b/sound/usb/mixer_scarlett_gen2.c
+@@ -1978,7 +1978,7 @@ static int scarlett2_mixer_status_create(struct usb_mixer_interface *mixer)
+ 		return 0;
+ 	}
+ 
+-	if (usb_pipe_type_check(dev, pipe))
++	if (snd_usb_pipe_sanity_check(dev, pipe))
+ 		return -EINVAL;
+ 
+ 	mixer->urb = usb_alloc_urb(0, GFP_KERNEL);
+diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
+index c50be2f..d33a936 100644
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -856,7 +856,7 @@ static int snd_usb_accessmusic_boot_quirk(struct usb_device *dev)
+ 	static const u8 seq[] = { 0x4e, 0x73, 0x52, 0x01 };
+ 	void *buf;
+ 
+-	if (usb_pipe_type_check(dev, usb_sndintpipe(dev, 0x05)))
++	if (snd_usb_pipe_sanity_check(dev, usb_sndintpipe(dev, 0x05)))
+ 		return -EINVAL;
+ 	buf = kmemdup(seq, ARRAY_SIZE(seq), GFP_KERNEL);
+ 	if (!buf)
+@@ -1024,7 +1024,7 @@ static int snd_usb_motu_microbookii_communicate(struct usb_device *dev, u8 *buf,
+ {
+ 	int err, actual_length;
+ 
+-	if (usb_pipe_type_check(dev, usb_sndintpipe(dev, 0x01)))
++	if (snd_usb_pipe_sanity_check(dev, usb_sndintpipe(dev, 0x01)))
+ 		return -EINVAL;
+ 	err = usb_interrupt_msg(dev, usb_sndintpipe(dev, 0x01), buf, *length,
+ 				&actual_length, 1000);
+@@ -1036,7 +1036,7 @@ static int snd_usb_motu_microbookii_communicate(struct usb_device *dev, u8 *buf,
+ 
+ 	memset(buf, 0, buf_size);
+ 
+-	if (usb_pipe_type_check(dev, usb_rcvintpipe(dev, 0x82)))
++	if (snd_usb_pipe_sanity_check(dev, usb_rcvintpipe(dev, 0x82)))
+ 		return -EINVAL;
+ 	err = usb_interrupt_msg(dev, usb_rcvintpipe(dev, 0x82), buf, buf_size,
+ 				&actual_length, 1000);
+-- 
+2.28.0
+
