@@ -94,7 +94,7 @@ in this directory):
 
 ```
 make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb clean
-make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb
+make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb modules
 ```
 
 *Untested* Something like this would install the newly built modules in your system against your current kernel.
