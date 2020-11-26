@@ -4,6 +4,8 @@ Initially, this enables the usage of bleeding-edge driver code for USB sound
 devices against a mainline kernel (5.2.x). By "bleeding-edge", I mean pre-Linus, destined for the 5.4 merge window,
 a few months in the future.
 
+Work has continued to backport v5.10.x-rcX to v5.9.x, at this time of writing (Nov 2020).
+
 This is assembled from the Linux Kernel's sound sub-system maintainer, 
 Takashi Iwai's tree (`git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git`). Initially, it was mainly for trying out the 
 work of Geoffrey D. Bennett (`git://github.com/geoffreybennett/scarlett-gen2.git`) [final V7 post](https://mailman.alsa-project.org/pipermail/alsa-devel/2019-July/153057.html)
@@ -101,6 +103,9 @@ You might want to do `make -n` to see where the command put the modules:
 ```
 make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb modules_install
 ```
+
+If your kernel has `CONFIG_MMODULE_SIG_FORCE=y` (most secure-boot distribution kernels are), you will need to have a pair of `certs/signing_key.pem`
+and `certs/signing_key.x509`, acceptable to your current BIOS, to sign the kernel modules.
 
 However, you are advised to do `dpkg-buildpackage` (on Ubuntu/Debian), or follow the "Manual installation..." sections above, to build the DKMS deb/rpm
 package. After install that instead, the DKMS system will then build and install the kernel modules at the next reboot, for any old or new compatible kernel you
