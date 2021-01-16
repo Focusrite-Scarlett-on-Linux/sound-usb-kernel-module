@@ -229,7 +229,7 @@ static const u16 scarlett2_sw_config_mixer_values[173] = {
 
 #define SCARLETT2_SW_CONFIG_BASE                 0xec
 
-#define SCARLETT2_SW_CONFIG_PACKET_SIZE          992      /* The maximum packet size used to transfer data */
+#define SCARLETT2_SW_CONFIG_PACKET_SIZE          1024     /* The maximum packet size used to transfer data */
 
 #define SCARLETT2_SW_CONFIG_MIXER_INPUTS         30       /* 30 inputs per one mixer in config */
 #define SCARLETT2_SW_CONFIG_MIXER_OUTPUTS        12       /* 12 outputs in config */
@@ -1811,7 +1811,7 @@ static int scarlett2_usb(
 	struct usb_device *dev = mixer->chip->dev;
 	u16 req_buf_size = sizeof(struct scarlett2_usb_packet) + req_size;
 	u16 resp_buf_size = sizeof(struct scarlett2_usb_packet) + resp_size;
-	struct scarlett2_usb_packet *req, *resp = NULL;
+	struct scarlett2_usb_packet *req = NULL, *resp = NULL;
 	int err;
 
 	req = kmalloc(req_buf_size, GFP_KERNEL);
@@ -2003,10 +2003,17 @@ static int scarlett2_usb_set(
 	struct {
 		__le32 offset;
 		__le32 size;
-		u8 data[SCARLETT2_SW_CONFIG_PACKET_SIZE];
-	} __packed req;
+		u8 data[];
+	} __packed *req;
 	int i, chunk, err = 0;
 	const u8 *buf = (const u8 *)data;
+
+	/* Allocate buffer */
+	req = kmalloc(sizeof(__le32)*2 + SCARLETT2_SW_CONFIG_PACKET_SIZE, GFP_KERNEL);
+	if (!req) {
+		err = -ENOMEM;
+		goto error;
+	}
 
 	/* Transfer the configuration with fixed-size data chunks */
 	for (i=0; i<bytes; i += chunk) {
@@ -2016,15 +2023,17 @@ static int scarlett2_usb_set(
 			chunk = SCARLETT2_SW_CONFIG_PACKET_SIZE;
 
 		/* Send yet another chunk of data */
-		req.offset = cpu_to_le32(offset + i);
-		req.size   = cpu_to_le32(chunk);
-		memcpy(req.data, &buf[i], chunk);
+		req->offset = cpu_to_le32(offset + i);
+		req->size   = cpu_to_le32(chunk);
+		memcpy(req->data, &buf[i], chunk);
 
-		err = scarlett2_usb(mixer, SCARLETT2_USB_SET_DATA, &req, chunk + sizeof(__le32)*2, NULL, 0);
+		err = scarlett2_usb(mixer, SCARLETT2_USB_SET_DATA, req, chunk + sizeof(__le32)*2, NULL, 0);
 		if (err < 0)
-			return err;
+			goto error;
 	}
 
+error:
+	kfree(req);
 	return err;
 }
 
