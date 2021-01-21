@@ -1159,7 +1159,7 @@ static const struct scarlett2_sw_port_mapping s18i8_gen3_sw_port_mapping[] = {
 	{ -1, -1, -1, -1}
 };
 
-static const u8 s18i8_analogue_out_remapping[8] = { 0, 1, 6, 7, 2, 3, 4, 5 };
+static const u8 s18i8_analogue_out_remapping[8] = { 0, 1, 4, 5, 6, 7, 2, 3 };
 
 static const struct scarlett2_device_info s18i8_gen3_info = {
 	.usb_id = USB_ID(0x1235, 0x8214),
