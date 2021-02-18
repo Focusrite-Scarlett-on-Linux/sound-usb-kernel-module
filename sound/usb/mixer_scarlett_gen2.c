@@ -1771,7 +1771,7 @@ static int scarlett2_usb_init(struct usb_mixer_interface *mixer)
 	struct scarlett2_usb_packet *buf;
 	int err;
 
-	if (snd_usb_pipe_sanity_check(dev, usb_sndctrlpipe(dev, 0))) {
+	if (usb_pipe_type_check(dev, usb_sndctrlpipe(dev, 0))) {
 		return -EINVAL;
 	}
 
