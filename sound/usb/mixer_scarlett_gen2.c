@@ -708,10 +708,6 @@ static const struct scarlett2_device_info s18i8_gen2_info = {
 		},
 		[SCARLETT2_PORT_TYPE_SPDIF] = {
 			.id = SCARLETT2_PORT_ID_SPDIF,
-			/* S/PDIF outputs aren't available at 192kHz
-			 * but are included in the USB mux I/O
-			 * assignment message anyway
-			 */
 			.num = { 2, 2, 2, 2, 2 },
 			.src_descr = "S/PDIF In %d",
 			.src_num_offset = 1,
@@ -804,7 +800,7 @@ static const struct scarlett2_device_info s18i20_gen2_info = {
 			.dst_descr = "Analogue Out %02d"
 		},
 		[SCARLETT2_PORT_TYPE_SPDIF] = {
-			/* S/PDIF outputs aren't available at 192kHz
+			/* S/PDIF outputs aren't available at 192KHz
 			 * but are included in the USB mux I/O
 			 * assignment message anyway
 			 */
@@ -4952,25 +4948,25 @@ static void scarlett2_mixer_interrupt(struct urb *urb)
 	int ustatus = urb->status;
 
 	if (ustatus != 0)
-		goto requeue;
+			goto requeue;
 
 	if (len == 8) {
-		u32 data = le32_to_cpu(*(u32 *)urb->transfer_buffer);
+			u32 data = le32_to_cpu(*(u32 *)urb->transfer_buffer);
 
-		/* Notify clients about changes */
-		if (data & SCARLETT2_USB_INTERRUPT_VOL_CHANGE)
-			scarlett2_mixer_interrupt_vol_change(mixer);
-		if (data & SCARLETT2_USB_INTERRUPT_LINE_CTL_CHANGE)
-			scarlett2_mixer_interrupt_line_in_ctl_change(mixer);
-		if (data & SCARLETT2_USB_INTERRUPT_BUTTON_CHANGE)
-			scarlett2_mixer_interrupt_button_change(mixer);
-		if (data & SCARLETT2_USB_INTERRUPT_SPEAKER_CHANGE) {
-			scarlett2_mixer_interrupt_speaker_change(mixer);
-			scarlett2_mixer_interrupt_vol_change(mixer);
-			scarlett2_mixer_interrupt_button_change(mixer);
-		}
+			/* Notify clients about changes */
+			if (data & SCARLETT2_USB_INTERRUPT_VOL_CHANGE)
+					scarlett2_mixer_interrupt_vol_change(mixer);
+			if (data & SCARLETT2_USB_INTERRUPT_LINE_CTL_CHANGE)
+					scarlett2_mixer_interrupt_line_in_ctl_change(mixer);
+			if (data & SCARLETT2_USB_INTERRUPT_BUTTON_CHANGE)
+					scarlett2_mixer_interrupt_button_change(mixer);
+			if (data & SCARLETT2_USB_INTERRUPT_SPEAKER_CHANGE) {
+					scarlett2_mixer_interrupt_speaker_change(mixer);
+					scarlett2_mixer_interrupt_vol_change(mixer);
+					scarlett2_mixer_interrupt_button_change(mixer);
+			}
 	} else {
-		usb_audio_err(mixer->chip, "scarlett mixer interrupt length %d\n", len);
+			usb_audio_err(mixer->chip, "scarlett mixer interrupt length %d\n", len);
 	}
 
 requeue:
