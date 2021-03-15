@@ -4955,7 +4955,7 @@ static void scarlett2_mixer_interrupt(struct urb *urb)
 		goto requeue;
 
 	if (len == 8) {
-		u32 data = le32_to_cpu(*(__le32 *)urb->transfer_buffer);
+		u32 data = le32_to_cpu(*(u32 *)urb->transfer_buffer);
 
 		/* Notify clients about changes */
 		if (data & SCARLETT2_USB_INTERRUPT_VOL_CHANGE)
