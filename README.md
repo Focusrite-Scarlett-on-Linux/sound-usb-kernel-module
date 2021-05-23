@@ -22,3 +22,4 @@ directories, and run `depmod -a` to let the kernel rescan them, rather than doin
 If your kernel has `CONFIG_MMODULE_SIG_FORCE=y` (most secure-boot distribution kernels are), you will need to have a pair of `certs/signing_key.pem`
 and `certs/signing_key.x509`, acceptable to your current BIOS, to sign the kernel modules.
 
+Add a single line `#define DEBUG 1` to the top of `sound/usb/mixer_scarlett_gen2.c`, to enable some rather noisy debug messaging code, if needed.
