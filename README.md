@@ -31,7 +31,11 @@ make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb modules
 depmod -a
 ```
 
-You should see `Focusrite Scarlett Gen 2/3 Mixer Driver enabled [sadko4u mod] ...` for one,
+`depmod -v -a` (with `-v`) gives rather verbose messages about kernel modules. You should find those new ones being
+processed.
+
+After reboot, if you run `dmesg`,
+you should see `Focusrite Scarlett Gen 2/3 Mixer Driver enabled [sadko4u mod] ...` for one,
 and `Focusrite Scarlett Gen 2/3 Mixer Driver enabled v5.12.9s1 ...`
 for the other.
 
