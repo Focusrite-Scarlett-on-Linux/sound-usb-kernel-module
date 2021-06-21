@@ -34,6 +34,9 @@ depmod -a
 `depmod -v -a` (with `-v`) gives rather verbose messages about kernel modules. You should find those new ones being
 processed.
 
+Also remember to create a `/etc/modprobe.d/scarlett.conf` with `device_setup=1` option for the device as in the
+[detailed instruction](https://github.com/geoffreybennett/scarlett-gen2/releases).
+
 After reboot, if you run `dmesg`,
 you should see `Focusrite Scarlett Gen 2/3 Mixer Driver enabled [sadko4u mod] ...` for one,
 and `Focusrite Scarlett Gen 2/3 Mixer Driver enabled v5.12.9s1 ...`
