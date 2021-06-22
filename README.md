@@ -35,7 +35,7 @@ depmod -a
 processed.
 
 Also remember to create a `/etc/modprobe.d/scarlett.conf` with `device_setup=1` option for the device as in the
-[detailed instruction](https://github.com/geoffreybennett/scarlett-gen2/releases).
+[detailed instruction](https://github.com/geoffreybennett/scarlett-gen2/releases), duplicated further below.
 
 After reboot, if you run `dmesg`,
 you should see `Focusrite Scarlett Gen 2/3 Mixer Driver enabled [sadko4u mod] ...` for one,
@@ -46,3 +46,25 @@ If your kernel has `CONFIG_MMODULE_SIG_FORCE=y` (most secure-boot distribution k
 and `certs/signing_key.x509`, acceptable to your current BIOS, to sign the kernel modules.
 
 Add a single line `#define DEBUG 1` to the top of `sound/usb/mixer_scarlett_gen2.c`, to enable some rather noisy debug messaging code, if needed.
+
+## Enabling new functionality at load time
+
+You need to enable the driver at module load time with the device_setup=1 option to insmod/modprobe. Create a new file `/etc/modprobe.d/scarlett.conf`, with
+the following one-line content:
+
+Gen 2:
+
+- 6i6: `options snd_usb_audio vid=0x1235 pid=0x8203 device_setup=1`
+- 18i8: `options snd_usb_audio vid=0x1235 pid=0x8204 device_setup=1`
+- 18i20: `options snd_usb_audio vid=0x1235 pid=0x8201 device_setup=1`
+
+Gen 3:
+
+- Solo: `options snd_usb_audio vid=0x1235 pid=0x8211 device_setup=1`
+- 2i2: `options snd_usb_audio vid=0x1235 pid=0x8210 device_setup=1`
+- 4i4: `options snd_usb_audio vid=0x1235 pid=0x8212 device_setup=1`
+- 8i6: `options snd_usb_audio vid=0x1235 pid=0x8213 device_setup=1`
+- 18i8: `options snd_usb_audio vid=0x1235 pid=0x8214 device_setup=1`
+- 18i20: `options snd_usb_audio vid=0x1235 pid=0x8215 device_setup=1`
+
+Or you can use the sledgehammer: `options snd_usb_audio device_setup=1,1,1,1` to pass that option to the first 4 USB audio devices.
