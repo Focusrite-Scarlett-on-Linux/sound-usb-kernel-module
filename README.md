@@ -49,7 +49,7 @@ Add a single line `#define DEBUG 1` to the top of `sound/usb/mixer_scarlett_gen2
 
 ## Enabling new functionality at load time
 
-You need to enable the driver at module load time with the device_setup=1 option to insmod/modprobe. Create a new file `/etc/modprobe.d/scarlett.conf`, with
+You need to enable the driver at module load time with the `device_setup=1` option to insmod/modprobe. Create a new file `/etc/modprobe.d/scarlett.conf`, with
 the following one-line content:
 
 Gen 2:
