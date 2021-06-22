@@ -47,7 +47,7 @@ and `certs/signing_key.x509`, acceptable to your current BIOS, to sign the kerne
 
 ## Enabling new functionality at load time
 
-You need to enable the driver at module load time with the device_setup=1 option to insmod/modprobe. Create a new file `/etc/modprobe.d/scarlett.conf`, with
+You need to enable the driver at module load time with the `device_setup=1` option to insmod/modprobe. Create a new file `/etc/modprobe.d/scarlett.conf`, with
 the following one-line content:
 
 Gen 2:
