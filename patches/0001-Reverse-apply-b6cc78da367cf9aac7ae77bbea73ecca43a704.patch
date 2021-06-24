@@ -1,0 +1,36 @@
+From 9e54753a7387cce9a42e36d60d70dd10c2bfa78f Mon Sep 17 00:00:00 2001
+From: Hin-Tak Leung <htl10@users.sourceforge.net>
+Date: Thu, 24 Jun 2021 04:39:10 +0100
+Subject: [PATCH] Reverse apply b6cc78da367cf9aac7ae77bbea73ecca43a70461
+
+commit b6cc78da367cf9aac7ae77bbea73ecca43a70461
+Author: Takashi Iwai <tiwai@suse.de>
+Date:   Sun May 23 11:09:19 2021 +0200
+
+    ALSA: Drop superfluous argument from snd_power_wait()
+
+    The power_state argument of snd_power_wait() is superfluous, receiving
+    only SNDRV_POWER_STATE_D0.  Let's drop it in all callers for
+    simplicity.
+
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ sound/usb/usx2y/us122l.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/usb/usx2y/us122l.c b/sound/usb/usx2y/us122l.c
+index e558931..0b0a87a 100644
+--- a/sound/usb/usx2y/us122l.c
++++ b/sound/usb/usx2y/us122l.c
+@@ -385,7 +385,7 @@ static int usb_stream_hwdep_ioctl(struct snd_hwdep *hw, struct file *file,
+ 	if (cfg.period_frames < min_period_frames)
+ 		return -EINVAL;
+ 
+-	snd_power_wait(hw->card);
++	snd_power_wait(hw->card, SNDRV_CTL_POWER_D0);
+ 
+ 	mutex_lock(&us122l->mutex);
+ 	s = us122l->sk.s;
+-- 
+2.31.1
+
