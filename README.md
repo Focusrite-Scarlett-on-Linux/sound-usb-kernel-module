@@ -31,6 +31,9 @@ make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb modules
 depmod -a
 ```
 
+The `v5.12-sound-master` branch tracks the linux kernel sound maintainer Takashi's tree and can be accessed similarly
+by replacing `v5.12-scarlett-gen3` by `v5.12-sound-master` in the instructions above.
+
 `depmod -v -a` (with `-v`) gives rather verbose messages about kernel modules. You should find those new ones being
 processed.
 
