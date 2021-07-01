@@ -1093,7 +1093,7 @@ static int scarlett2_usb(
 	if (err != req_buf_size) {
 		usb_audio_err(
 			mixer->chip,
-			"Scarlett Gen 2 USB request result cmd %x was %d\n",
+			"Scarlett Gen 2/3 USB request result cmd %x was %d\n",
 			cmd, err);
 		err = -EINVAL;
 		goto unlock;
@@ -1110,7 +1110,7 @@ static int scarlett2_usb(
 	if (err != resp_buf_size) {
 		usb_audio_err(
 			mixer->chip,
-			"Scarlett Gen 2 USB response result cmd %x was %d "
+			"Scarlett Gen 2/3 USB response result cmd %x was %d "
 			"expected %d\n",
 			cmd, err, resp_buf_size);
 		err = -EINVAL;
@@ -1128,7 +1128,7 @@ static int scarlett2_usb(
 	    resp->pad) {
 		usb_audio_err(
 			mixer->chip,
-			"Scarlett Gen 2 USB invalid response; "
+			"Scarlett Gen 2/3 USB invalid response; "
 			   "cmd tx/rx %d/%d seq %d/%d size %d/%d "
 			   "error %d pad %d\n",
 			le32_to_cpu(req->cmd), le32_to_cpu(resp->cmd),
@@ -1607,10 +1607,15 @@ static int scarlett2_add_new_ctl(struct usb_mixer_interface *mixer,
 	if (!elem)
 		return -ENOMEM;
 
+	/* We set USB_MIXER_BESPOKEN type, so that the core USB mixer code
+	 * ignores them for resume and other operations.
+	 * Also, the head.id field is set to 0, as we don't use this field.
+	 */
 	elem->head.mixer = mixer;
 	elem->control = index;
-	elem->head.id = index;
+	elem->head.id = 0;
 	elem->channels = channels;
+	elem->val_type = USB_MIXER_BESPOKEN;
 
 	kctl = snd_ctl_new1(ncontrol, elem);
 	if (!kctl) {
@@ -3950,7 +3955,7 @@ int snd_scarlett_gen2_init(struct usb_mixer_interface *mixer)
 
 	if (!(chip->setup & SCARLETT2_ENABLE)) {
 		usb_audio_info(chip,
-			"Focusrite Scarlett Gen 2 Mixer Driver disabled; "
+			"Focusrite Scarlett Gen 2/3 Mixer Driver disabled; "
 			"use options snd_usb_audio vid=0x%04x pid=0x%04x "
 			"device_setup=1 to enable and report any issues "
 			"to g@b4.vu",
@@ -3960,7 +3965,7 @@ int snd_scarlett_gen2_init(struct usb_mixer_interface *mixer)
 	}
 
 	usb_audio_info(chip,
-		"Focusrite Scarlett Gen 2/3 Mixer Driver enabled v5.12.9s1 pid=0x%04x",
+		"Focusrite Scarlett Gen 2/3 Mixer Driver enabled pid=0x%04x",
 		USB_ID_PRODUCT(chip->usb_id));
 
 	err = snd_scarlett_gen2_controls_create(mixer);
