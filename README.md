@@ -19,20 +19,19 @@ The linux kernel prefers to load modules under `/lib/modules/*/updates` and `/li
 so it is safer to manually copy new `*.ko` into those
 directories, and run `depmod -a` to let the kernel rescan them, rather than doing `make ... modules_install`.
 
-The default branch (`v5.12-dev`) tracks Vladimir / sadko4u 's. The `v5.12-scarlett-gen3` branch tracks Geoffrey
-Bennett's `scarlett-gen3` development, and can be accessed by:
+The `v5.12-sound-master` branch tracks the linux kernel sound maintainer Takashi's tree.
+The `v5.12-dev` branch tracks Vladimir / sadko4u 's. The `v5.12-scarlett-gen3` branch tracks Geoffrey
+Bennett's `scarlett-gen3` development. They can be accessed by the instructions below,
+replacing `v5.12-sound-master` by `v5.12-dev` or `v5.12-scarlett-gen3`:
 
 ```
-git clone -b v5.12-scarlett-gen3 https://github.com/Focusrite-Scarlett-on-Linux/sound-usb-kernel-module.git
+git clone -b v5.12-sound-master https://github.com/Focusrite-Scarlett-on-Linux/sound-usb-kernel-module.git
 cd sound-usb-kernel-module
 make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb clean
 make -C /lib/modules/`uname -r`/build M=`pwd`/sound/usb modules
 # copy all the *.ko from under sound/usb into /lib/modules/`uname -r`/updates ; see the README
 depmod -a
 ```
-
-The `v5.12-sound-master` branch tracks the linux kernel sound maintainer Takashi's tree and can be accessed similarly
-by replacing `v5.12-scarlett-gen3` by `v5.12-sound-master` in the instructions above.
 
 `depmod -v -a` (with `-v`) gives rather verbose messages about kernel modules. You should find those new ones being
 processed.
