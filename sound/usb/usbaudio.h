@@ -55,6 +55,7 @@ struct snd_usb_audio {
 	bool generic_implicit_fb;	/* from the 'implicit_fb' module param */
 	bool autoclock;			/* from the 'autoclock' module param */
 
+	bool lowlatency;		/* from the 'lowlatency' module param */
 	struct usb_host_interface *ctrl_intf;	/* the audio control interface */
 	struct media_device *media_dev;
 	struct media_intf_devnode *ctl_intf_media_devnode;
@@ -161,6 +162,8 @@ extern bool snd_usb_skip_validation;
  *  Ignore errors for mixer access
  * QUIRK_FLAG_DSD_RAW:
  *  Support generic DSD raw U32_BE format
+ * QUIRK_FLAG_SET_IFACE_FIRST:
+ *  Set up the interface at first like UAC1
  */
 
 #define QUIRK_FLAG_GET_SAMPLE_RATE	(1U << 0)
@@ -179,5 +182,6 @@ extern bool snd_usb_skip_validation;
 #define QUIRK_FLAG_DISABLE_AUTOSUSPEND	(1U << 13)
 #define QUIRK_FLAG_IGNORE_CTL_ERROR	(1U << 14)
 #define QUIRK_FLAG_DSD_RAW		(1U << 15)
+#define QUIRK_FLAG_SET_IFACE_FIRST	(1U << 16)
 
 #endif /* __USBAUDIO_H */
