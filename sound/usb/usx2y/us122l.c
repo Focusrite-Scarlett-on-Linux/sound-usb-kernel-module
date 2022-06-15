@@ -11,6 +11,7 @@
 #include <sound/hwdep.h>
 #include <sound/pcm.h>
 #include <sound/initval.h>
+#include <linux/version.h>
 #define MODNAME "US122L"
 #include "usb_stream.c"
 #include "../usbaudio.h"
@@ -379,7 +380,11 @@ static int usb_stream_hwdep_ioctl(struct snd_hwdep *hw, struct file *file,
 	if (cfg.period_frames < min_period_frames)
 		return -EINVAL;
 
-	snd_power_wait(hw->card, SNDRV_CTL_POWER_D0);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0)
+    snd_power_wait(hw->card);
+#else
+    snd_power_wait(hw->card, SNDRV_CTL_POWER_D0);
+#endif
 
 	mutex_lock(&us122l->mutex);
 	s = us122l->sk.s;
