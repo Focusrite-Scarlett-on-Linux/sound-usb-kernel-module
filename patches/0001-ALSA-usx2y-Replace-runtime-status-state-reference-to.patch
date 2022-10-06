@@ -1,0 +1,49 @@
+From ca4833c5a21bf419fe505e9798bbf49cbd482e8f Mon Sep 17 00:00:00 2001
+From: Takashi Iwai <tiwai@suse.de>
+Date: Mon, 26 Sep 2022 15:55:55 +0200
+Subject: [PATCH] ALSA: usx2y: Replace runtime->status->state reference to
+ runtime->state
+
+The recent change in ALSA core allows drivers to get the current PCM
+state directly from runtime object.  Replace the calls accordingly.
+
+Reviewed-by: Jaroslav Kysela <perex@perex.cz>
+Link: https://lore.kernel.org/r/20220926135558.26580-9-tiwai@suse.de
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ sound/usb/usx2y/usbusx2yaudio.c | 3 +--
+ sound/usb/usx2y/usx2yhwdeppcm.c | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
+index 9cd5e3aae4f77..5197599e7aa61 100644
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -822,8 +822,7 @@ static int snd_usx2y_pcm_hw_free(struct snd_pcm_substream *substream)
+ 		usx2y_urbs_release(subs);
+ 		if (!cap_subs->pcm_substream ||
+ 		    !cap_subs->pcm_substream->runtime ||
+-		    !cap_subs->pcm_substream->runtime->status ||
+-		    cap_subs->pcm_substream->runtime->status->state < SNDRV_PCM_STATE_PREPARED) {
++		    cap_subs->pcm_substream->runtime->state < SNDRV_PCM_STATE_PREPARED) {
+ 			atomic_set(&cap_subs->state, STATE_STOPPED);
+ 			usx2y_urbs_release(cap_subs);
+ 		}
+diff --git a/sound/usb/usx2y/usx2yhwdeppcm.c b/sound/usb/usx2y/usx2yhwdeppcm.c
+index 240349b644f38..767a227d54da4 100644
+--- a/sound/usb/usx2y/usx2yhwdeppcm.c
++++ b/sound/usb/usx2y/usx2yhwdeppcm.c
+@@ -374,8 +374,7 @@ static int snd_usx2y_usbpcm_hw_free(struct snd_pcm_substream *substream)
+ 		usx2y_usbpcm_urbs_release(subs);
+ 		if (!cap_subs->pcm_substream ||
+ 		    !cap_subs->pcm_substream->runtime ||
+-		    !cap_subs->pcm_substream->runtime->status ||
+-		    cap_subs->pcm_substream->runtime->status->state < SNDRV_PCM_STATE_PREPARED) {
++		    cap_subs->pcm_substream->runtime->state < SNDRV_PCM_STATE_PREPARED) {
+ 			atomic_set(&cap_subs->state, STATE_STOPPED);
+ 			if (cap_subs2)
+ 				atomic_set(&cap_subs2->state, STATE_STOPPED);
+-- 
+2.37.3
+

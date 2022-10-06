@@ -1,0 +1,42 @@
+From d8b4efeeb37ae5e221be6b265a5b93f54c242e82 Mon Sep 17 00:00:00 2001
+From: Takashi Iwai <tiwai@suse.de>
+Date: Mon, 26 Sep 2022 15:55:54 +0200
+Subject: [PATCH] ALSA: usb-audio: Replace runtime->status->state reference to
+ runtime->state
+
+The recent change in ALSA core allows drivers to get the current PCM
+state directly from runtime object.  Replace the calls accordingly.
+
+Reviewed-by: Jaroslav Kysela <perex@perex.cz>
+Link: https://lore.kernel.org/r/20220926135558.26580-8-tiwai@suse.de
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+---
+ sound/usb/pcm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+index e721fc12acde7..8ed165f036a01 100644
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -1395,7 +1395,7 @@ static int prepare_playback_urb(struct snd_usb_substream *subs,
+ 	transfer_done = subs->transfer_done;
+ 
+ 	if (subs->lowlatency_playback &&
+-	    runtime->status->state != SNDRV_PCM_STATE_DRAINING) {
++	    runtime->state != SNDRV_PCM_STATE_DRAINING) {
+ 		unsigned int hwptr = subs->hwptr_done / stride;
+ 
+ 		/* calculate the byte offset-in-buffer of the appl_ptr */
+@@ -1583,7 +1583,7 @@ static int snd_usb_substream_playback_trigger(struct snd_pcm_substream *substrea
+ 		return 0;
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
+ 	case SNDRV_PCM_TRIGGER_STOP:
+-		stop_endpoints(subs, substream->runtime->status->state == SNDRV_PCM_STATE_DRAINING);
++		stop_endpoints(subs, substream->runtime->state == SNDRV_PCM_STATE_DRAINING);
+ 		snd_usb_endpoint_set_callback(subs->data_endpoint,
+ 					      NULL, NULL, NULL);
+ 		subs->running = 0;
+-- 
+2.37.3
+
